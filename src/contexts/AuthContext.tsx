@@ -64,7 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const inactivityTimeout = 10 * 30 * 1000; // 2 minutos em milissegundos
+  const inactivityTimeout = 10 * 60 * 1000; // 2 minutos em milissegundos
   let inactivityTimer: NodeJS.Timeout;
 
   const resetInactivityTimer = () => {
@@ -115,11 +115,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
       setUser(data);
-      setLoadingAuth(false);
+      //setLoadingAuth(false);
       resetInactivityTimer();
     } catch (error) {
-      console.log('Erro ao acessar', error);
-      setLoadingAuth(false);
+       
+       throw error.response?.data || { error: 'Erro ao tentar se comunicar com o servidor' };
     }
   }
 
@@ -129,13 +129,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await api.post('/users', data);
 
-      console.log('Usuário criado com sucesso:', response.data);
-      Alert.alert('Sucesso', 'Usuário registrado com sucesso!');
+      //console.log('Usuário criado com sucesso:', response.data);
+      console.log('Sucesso', 'Usuário registrado com sucesso!');
       setLoadingAuth(false);
     } catch (error) {
-      console.log('Erro ao registrar', error);
-      Alert.alert('Erro', 'Erro ao registrar usuário. Tente novamente.');
-      setLoadingAuth(false);
+      console.log('Sucesso', ' erro  registrando Usuário', error);
+
+       throw error.response?.data || { error: 'Erro ao registrar usuário. Tente novamente.' };
+
     }
   }
 

@@ -1,20 +1,27 @@
 import React, { useState, useContext, useEffect } from "react";
-import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, FlatList, TextInput, Modal, TouchableWithoutFeedback } from "react-native";
+import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StackPramsList } from "../../routes/app.routes";
 import { api } from "../../services/api";
 import { AuthContext } from "../../contexts/AuthContext";
-import Icon from 'react-native-vector-icons/FontAwesome';
-import io from 'socket.io-client';  
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
-const socket = io("http://10.20.23.66:3000"); 
+//const socket = io("https://raqui.vercel.app"); 
+/*const socket = io('wss://raqui.vercel.app', {
+  transports: ['websocket'],
+});*/
 type Pedido = {
   id: string;
   descricao: string;
   status: string;
   Interacao: Interacao[];
   tipo: string;
+  usuario: {
+    proces_number: string;
+    tipo_pagamento: string;
+  };
 };
 
 type Interacao = {
@@ -35,55 +42,32 @@ export default function Dashboard() {
   const { user } = useContext(AuthContext);
   const navigation = useNavigation<NativeStackNavigationProp<StackPramsList>>();
   const [newInteractionContent, setNewInteractionContent] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Verifica se o user.role está definido antes de buscar pedidos
-    if (user && user.role) {
-      async function fetchOrders() {
-        try {
-          const url = user.role === "ADMIN" ? "/pedidos" : `/pedido_user/${user.id}`;
-          const response = await api.get(url, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          });
-          console.log("data", response.data);
-          const filteredOrders = response.data.filter((order: Pedido) => order.status === "PENDENTE");
-          setOrders(filteredOrders);
-        } catch (error) {
-          console.error("Erro ao buscar pedidos:", error);
-        }
+useEffect(() => {
+  if (user && user.role) {
+    async function fetchOrders() {
+      setIsLoading(true); // Ativa o carregamento
+      try {
+        const url = user.role === "ADMIN" ? "/pedidos" : `/pedido_user/${user.id}`;
+        const response = await api.get(url, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        const filteredOrders = response.data.filter((order: Pedido) => order.status === "PENDENTE");
+        setOrders(filteredOrders);
+      } catch (error) {
+        console.error("Erro ao buscar pedidos:", error);
+      } finally {
+        setIsLoading(false); // Desativa o carregamento
       }
-
-      fetchOrders();
-      // Escuta eventos de novos pedidos e atualizações via socket
-      socket.on("newOrder", (newOrder) => {
-        setOrders((prevOrders) => [...prevOrders, newOrder]);
-      });
-
-      socket.on("updateOrder", (updatedOrder) => {
-        setOrders((prevOrders) =>
-          prevOrders.map(order => order.id === updatedOrder.id ? updatedOrder : order)
-        );
-      });
-
-      socket.on("newInteraction", (newInteraction) => {
-        setOrders((prevOrders) =>
-          prevOrders.map(order => 
-            order.id === newInteraction.servicoId 
-              ? { ...order, Interacao: [...order.Interacao, newInteraction] }
-              : order
-          )
-        );
-      });
     }
 
-    return () => {
-      // Limpeza: remove listeners quando o componente é desmontado
-      socket.off("newOrder");
-      socket.off("updateOrder");
-      socket.off("newInteraction");
-    };
-    
-  }, [user.role]); 
+    // Chama a função de busca ao carregar o componente
+    fetchOrders();
+  }
+}, [user, orders]); // Apenas depende de 'user' porque o 'user' não muda
+
+
 
   function toggleExpand(orderId: string) {
     setExpandedOrderId(prev => (prev === orderId ? null : orderId));
@@ -104,18 +88,25 @@ export default function Dashboard() {
       }, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
+      
 
-      if (response.status === 200) {
-        alert('Interação adicionada com sucesso!');
-        setNewInteractionContent('');
+      if (response.status === 201) {
+        //alert('Interação adicionada com sucesso!');
+        
+        setNewInteractionContent("");
         setOrders(orders.map(order => 
           order.id === orderId ? { ...order, Interacao: [...order.Interacao, response.data] } : order
         ));
       } else {
-        alert('Erro ao adicionar interação. Tente novamente.');
+       
+         Toast.show({
+                  type: 'error',  // Pode ser 'success', 'error', 'info'
+                  text1: 'Erro',  // Título
+                  text2: 'Erro ao adicionar Tenta novamente. se persistir contacte o suporte',  // Mensagem
+                });
       }
     } catch (error) {
-      console.error("Erro na requisição:", error);
+      //console.error("Erro na requisição:", error);
       alert('Ocorreu um erro inesperado. Tente novamente.');
     }
   }
@@ -123,10 +114,11 @@ export default function Dashboard() {
   const renderOrderItem = ({ item }: { item: Pedido }) => (
   <View style={styles.orderContainer}>
     {/* Exibe o tipo de serviço em destaque com o mesmo estilo da descrição */}
-    {item.tipo && <Text style={styles.serviceType}><Icon name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} /> {item.tipo}</Text>}
+      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} /> {item.tipo}</Text>}
+    <Text style={styles.orderDescription}>Nº: {item.usuario.proces_number}  {item.usuario.tipo_pagamento}</Text>
     <Text style={styles.orderDescription}>{item.descricao}</Text>
     <TouchableOpacity onPress={() => toggleExpand(item.id)}>
-      <Icon
+      <FontAwesome
         name={expandedOrderId === item.id ? "eye-slash" : "eye"} // Altera o ícone conforme o estado expandido
         size={28}
         color="#3fffa3"
@@ -147,33 +139,109 @@ export default function Dashboard() {
             <Text style={styles.interactionDate}>{new Date(interacao.criado_em).toLocaleString()}</Text>
           </View>
         ))}
-          {item.status === "PENDENTE" && (
-            <View style={styles.newInteractionContainer}>
-              <TextInput
-                style={styles.newInteractionInput}
-                placeholder="Escreva uma nova interação"
-                placeholderTextColor="#888"
-                value={newInteractionContent}
-                onChangeText={setNewInteractionContent}
-              />
-              <TouchableOpacity style={styles.sendButton} onPress={() => handleAddInteraction(item.id)}>
-                <Text style={styles.sendButtonText}>Enviar</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+        {item.status === "PENDENTE" &&
+                ((user.role === "ADMIN") || // Admin sempre pode interagir
+                  (user.role !== "ADMIN" && item.Interacao.length > 0)) && ( // Outros usuários precisam de pelo menos uma interação
+                  <View style={styles.newInteractionContainer}>
+                    <TextInput
+                      style={styles.newInteractionInput}
+                      multiline={true} 
+                      placeholder="Escreva uma nova interação"
+                      placeholderTextColor="#888"
+                      value={newInteractionContent}
+                      onChangeText={setNewInteractionContent}
+                    />
+                    <TouchableOpacity
+                      style={styles.sendButton}
+                      onPress={() => handleAddInteraction(item.id)}
+                    >
+                      <Text style={styles.sendButtonText}>Enviar</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+        {/* Botão para fechar o pedido visível apenas para administradores */}
+        {user.role === "ADMIN" && (
+          <TouchableOpacity
+            style={styles.closeOrderButton}
+            onPress={() => confirmAndCloseOrder(item.id)}
+          >
+            <Text style={styles.closeOrderButtonText}>Fechar a Interção</Text>
+          </TouchableOpacity>
+        )}
       </View>
     )}
   </View>
 );
+
+  async function confirmAndCloseOrder(orderId: string) {
+  Alert.alert(
+    "Confirmar Ação",
+    "Tem certeza de que deseja fechar este pedido?",
+    [
+      {
+        text: "Cancelar",
+        style: "cancel", // Estiliza como botão de cancelamento
+      },
+      {
+        text: "Fechar Pedido",
+        onPress: () => closeOrder(orderId), // Chama a função closeOrder ao confirmar
+      },
+    ],
+    { cancelable: true } // Permite que o alerta seja fechado ao clicar fora dele
+  );
+}
+
+async function closeOrder(orderId: string) {
+  try {
+    const response = await api.put('/pedido', 
+      {
+        id: orderId,
+        status: 'CONCLUIDO',
+      },
+      {
+        headers: { Authorization: `Bearer ${user.token}` }, // Inclui o token do usuário
+      }
+    );
+
+    if (response.status === 200 || response.status === 201) {
+      Toast.show({
+        type: 'Sucess',  // Pode ser 'success', 'error', 'info'
+        text1: 'Sucesso',  // Título
+        text2: 'Pedido fechado com sucesso!',  // Mensagem
+      });
+      //alert('Pedido fechado com sucesso!');
+      // Aqui você pode atualizar a lista de pedidos localmente, se necessário
+      // Exemplo: setOrders(orders.map(order => order.id === orderId ? { ...order, status: 'CONCLUIDO' } : order));
+    } else {
+      Toast.show({
+        type: 'error',  // Pode ser 'success', 'error', 'info'
+        text1: 'Erro',  // Título
+        text2: 'Erro ao fechar pedido. Tente novamente., tenta novamente ou contacte a área técnica',  // Mensagem
+      });
+      //alert('Erro ao fechar pedido. Tente novamente.');
+    }
+  } catch (error) {
+   // console.error("Erro ao fechar o pedido:", error);
+    alert('Ocorreu um erro inesperado. Tente novamente.');
+  }
+}
 
 
   function handleAddOrder() {
     setShowForm(true);
   }
 
+  
+
   async function sendRequest() {
     if (!selectedService || !description) {
-      alert('Por favor, selecione um serviço e insira uma descrição.');
+      
+      Toast.show({
+        type: 'error',  // Pode ser 'success', 'error', 'info'
+        text1: 'Erro',  // Título
+        text2: 'Por favor, selecione um serviço e insira uma descrição.',  // Mensagem
+      });
       return;
     }
 
@@ -188,36 +256,55 @@ export default function Dashboard() {
       });
 
       if (response.status === 201) {
-        alert('Pedido enviado com sucesso!');
+        
+        Toast.show({
+        type: 'success',  // Pode ser 'success', 'error', 'info'
+        text1: 'Sucesso',  // Título
+        text2: 'Pedido enviado com sucesso!',  // Mensagem
+      });
         setSelectedService('');
         setDescription('');
         setShowForm(false);
-        setOrders([...orders, response.data]); // Adiciona o novo pedido à lista
+        //setOrders([...orders, response.data]); // Adiciona o novo pedido à lista
+        
       } else {
-        alert('Erro ao criar pedido. Tente novamente.');
+        Toast.show({
+        type: 'error',  // Pode ser 'success', 'error', 'info'
+        text1: 'Erro',  // Título
+        text2: 'Erro ao fazer Pedido, tente de novo!',  // Mensagem
+      });
       }
     } catch (error) {
-      console.error("Erro na requisição:", error);
-      alert('Ocorreu um erro inesperado. Tente novamente.');
+      //console.error("Erro na requisição:", error);
+      Toast.show({
+        type: 'error',  // Pode ser 'success', 'error', 'info'
+        text1: 'Erro',  // Título
+        text2: 'Erro ao fazer Pedido, tente de novo!',  // Mensagem
+      });
     }
   }
 
   return (
  <SafeAreaView style={styles.container}>
     {/* Se não houver pedidos, exibe a mensagem */}
+    
     {orders.length === 0 ? (
         <View style={styles.noOrdersContainer}>
           {user.role === 'ADMIN' ? (
             <Text style={styles.noOrdersText}>
-              Não Há Pedidos Pendentes, Verifique se todos Peidos foram realizados com sucesso!
+              Não Há Pedidos Pendentes, Verifique se todos Peidos foram concluidos com sucesso!
            
             </Text>
           ) : (
 
-              <Text style={styles.noOrdersText}>
-              Não Há Pedidos Pendentes, Faça um Pedido Clicando no Botão abaixo!!
-           
-            </Text>
+              <View>
+                <Text style={styles.noOrdersText}>
+              Não Há Pedidos Pendentes. Em que podemos ajudar hoje?.
+              </Text>
+               <Text style={styles.noOrdersText}>
+              Em que podemos ajudar hoje?.
+              </Text>
+              </View>
               
             )}
       </View>
@@ -244,15 +331,27 @@ export default function Dashboard() {
       <TouchableWithoutFeedback onPress={() => setShowForm(false)}>
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.formContainer}>
-              <TouchableOpacity onPress={() => setSelectedService('ENTREGA')}>
-                <Text style={selectedService === 'ENTREGA' ? styles.selectedOption : styles.option}>Serviço de Entregas</Text>
+              <View style={styles.formContainer}>
+                <TouchableOpacity onPress={() => setSelectedService('SERVICO_24h')}>
+                <Text style={selectedService === 'SERVICO_24h' ? styles.selectedOption : styles.option}>Serviço 24H</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedService('MOTORISTA_PESSOAL')}>
-                <Text style={selectedService === 'MOTORISTA_PESSOAL' ? styles.selectedOption : styles.option}>Motorista Particular</Text>
+              
+              <TouchableOpacity onPress={() => setSelectedService('SERVICO_30_DIAS')}>
+                <Text style={selectedService === 'SERVICO_30_DIAS' ? styles.selectedOption : styles.option}>Serviço 30+</Text>
               </TouchableOpacity>
+              
+              <TouchableOpacity onPress={() => setSelectedService('SERVICO_ENTREGA')}>
+                <Text style={selectedService === 'SERVICO_ENTREGA' ? styles.selectedOption : styles.option}>Serviço de Entregas</Text>
+                </TouchableOpacity>
+              <TouchableOpacity onPress={() => setSelectedService('SERVICO_PESSOAL')}>
+                <Text style={selectedService === 'SERVICO_PESSOAL' ? styles.selectedOption : styles.option}>Serviço de Motorista Pessoal</Text>
+                </TouchableOpacity>
+                
+                
+                
               <TextInput
                 style={styles.input}
+                multiline={true} 
                 placeholder="Descrição do serviço"
                 placeholderTextColor="#888"
                 value={description}
@@ -282,6 +381,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,
+    margin:12,
   },
   
   noOrdersContainer: {
@@ -354,11 +454,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginVertical: 10,
+    margin:12
   },
   addButtonText: {
     color: '#1d1d2e',
     fontSize: 16,
     fontWeight: 'bold',
+    
   },
   modalOverlay: {
     flex: 1,
@@ -429,4 +531,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  closeOrderButton: {
+  backgroundColor: '#ff5c5c',
+  padding: 10,
+  borderRadius: 5,
+  alignItems: 'center',
+  marginTop: 10,
+},
+closeOrderButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  },
+loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#888',
+  },
+
 });

@@ -46,7 +46,7 @@ type Interacao = {
 
 //const socket = io("http://10.20.23.66:3000");
 
-export default function Order() {
+export default function Concluidos() {
   const [invoices, setInvoices] = useState<Fatura[]>([]);
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(
     null
@@ -65,7 +65,7 @@ export default function Order() {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         const filteredInvoices = response.data.filter(
-        (fatura: Fatura) => fatura.status === "ABERTA"
+        (fatura: Fatura) => fatura.status === "FECHADA"
       );
         setInvoices(filteredInvoices);
       } catch (error) {

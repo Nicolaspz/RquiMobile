@@ -8,15 +8,18 @@ import {
   TextInput,
   Modal,
   FlatList,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { AuthContext } from "../../contexts/AuthContext";
 import { api } from "../../services/api";
+import Toast from 'react-native-toast-message';
 import Checkbox from 'expo-checkbox';
 
 export default function SignIn() {
   const { signIn, signUp, sigOut } = useContext(AuthContext);
   const [isRegister, setIsRegister] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Estado para controle do carregamento
 
   const [name, setName] = useState('');
   const [credential, setCredential] = useState('');
@@ -36,11 +39,14 @@ export default function SignIn() {
     chamada: false,
     telegram: false,
   });
+  interface ApiError {
+  error?: string; // A propriedade error é opcional
+}
 
   interface User {
     name: string;
-    redes: string; // Incluindo `redes` no tipo User
-    email: string;
+    redes: string;
+    email?: string;
     role: string;
     telefone: string;
     tipo_pagamento: string;
@@ -49,29 +55,55 @@ export default function SignIn() {
     user_name: string;
   }
 
-  async function handleLogin() {
-    if (credential === '' || password === '') {
-      return;
-    }
-    await signIn({ credential, password });
+   async function handleLogin() {
+     if (credential === '' || password === '') {
+    Toast.show({
+    type: 'error',  // Pode ser 'success', 'error', 'info'
+    text1: 'Erro',  // Título
+    text2: 'Por favor, preencha todos os campos.',  // Mensagem
+  });
+    return;
   }
 
-  // Manipula a seleção de redes de comunicação
+  setIsLoading(true); // Ativa o carregamento
+  try {
+    await signIn({ credential, password });
+  } catch (err) {
+    
+    const error = err as ApiError; // Faz um cast para o tipo esperado
+    const errorMessage = error.error || 'Falha ao fazer login. Tente novamente.';
+    //Alert.alert('Erro', errorMessage); // Exibe o erro no alerta
+    Toast.show({
+    type: 'error',  // Pode ser 'success', 'error', 'info'
+    text1: 'Erro',  // Título
+    text2: errorMessage,  // Mensagem
+  });
+  } finally {
+    setIsLoading(false); // Desativa o carregamento
+  }
+}
+
+
+
   const toggleRedesSelection = (key: keyof typeof redesSelecionadas) => {
     setRedesSelecionadas(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   async function handleRegister() {
-    if (!name || !email || !telefone || !tipoPagamento) {
-      Alert.alert('Erro', 'Preencha todos os campos obrigatórios.');
+    if (!name || !telefone || !tipoPagamento || !redesSelecionadas) {
+      Toast.show({
+    type: 'error',  // Pode ser 'success', 'error', 'info'
+    text1: 'Erro',  // Título
+    text2: 'Preencha todos os campos obrigatórios.',  // Mensagem
+  });
+      
       return;
     }
 
-    // Converte as opções selecionadas em uma lista de redes
     const redesSelecionadasArray = Object.keys(redesSelecionadas).filter(
       (key) => redesSelecionadas[key as keyof typeof redesSelecionadas]
     );
-    const redes = redesSelecionadasArray.join(', '); // Transforma o array em uma string separada por vírgula
+    const redes = redesSelecionadasArray.join(', ');
 
     const userData: User = {
       name,
@@ -85,19 +117,26 @@ export default function SignIn() {
       redes
     };
 
+    setIsLoading(true); // Ativa o carregamento
+
     try {
       const response = await api.post<User>('/users', userData, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
-
-      console.log('Usuário criado com sucesso:', response.data);
-      Alert.alert('Sucesso', 'Usuário registrado com sucesso! Aguarde pela sua senha, entraremos em contacto');
+       Toast.show({
+    type: 'success',  // Pode ser 'success', 'error', 'info'
+    text1: 'Sucesso',  // Título
+    text2: 'Usuário registrado com sucesso!',  // Mensagem
+  });
+      //Alert.alert('Sucesso', 'Usuário registrado com sucesso!');
       setIsRegister(false);
     } catch (error: any) {
-      console.error('Erro ao registrar', error.response?.data || error.message);
       Alert.alert('Erro', 'Erro ao registrar usuário. Tente novamente.');
+      
+    } finally {
+      setIsLoading(false); // Desativa o carregamento
     }
   }
 
@@ -105,16 +144,16 @@ export default function SignIn() {
     <View style={styles.container}>
       <Image
         style={isRegister ? styles.registerLogo : styles.loginLogo}
-        source={isRegister ? require('../../assets/raqui.png') : require('../../assets/test.jpg')}
+        source={require('../../assets/raqi.png')}
       />
 
       <View style={styles.inputContainer}>
         {isRegister ? (
           <>
             <TextInput
-              placeholder="Digite seu nome ou empresa"
+              placeholder="Digite seu nome ou empresa*"
               style={styles.input}
-              placeholderTextColor="#000"
+              placeholderTextColor="black"
               value={name}
               onChangeText={setName}
             />
@@ -126,14 +165,14 @@ export default function SignIn() {
               onChangeText={setEmail}
             />
             <TextInput
-              placeholder="Digite nome de usuário"
+              placeholder="Digite nome de usuário*"
               style={styles.input}
               placeholderTextColor="#000"
               value={username}
               onChangeText={setUsername}
             />
             <TextInput
-              placeholder="Digite seu telefone"
+              placeholder="Digite seu telefone*"
               style={styles.input}
               placeholderTextColor="#000"
               value={telefone}
@@ -184,6 +223,7 @@ export default function SignIn() {
                 <Text style={styles.checkboxText}>Telegram</Text>
               </View>
             </View>
+            
             <Modal
               transparent={true}
               visible={modalVisible}
@@ -191,7 +231,9 @@ export default function SignIn() {
               onRequestClose={() => setModalVisible(false)}
             >
               <View style={styles.modalContainer}>
+                
                 <View style={styles.modalContent}>
+                   <Text style={styles.modalTitle}>Selecione o tipo de conta:</Text>
                   <FlatList
                     data={tipoPagamentoOptions}
                     keyExtractor={(item) => item}
@@ -203,6 +245,7 @@ export default function SignIn() {
                           setModalVisible(false);
                         }}
                       >
+                        
                         <Text style={styles.optionText}>{item}</Text>
                       </TouchableOpacity>
                     )}
@@ -212,7 +255,11 @@ export default function SignIn() {
             </Modal>
 
             <TouchableOpacity style={styles.button} onPress={handleRegister}>
-              <Text style={styles.buttonText}>Registrar</Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Registrar</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setIsRegister(false)}>
               <Text style={styles.toggleText}>Já tem uma conta? Acessar</Text>
@@ -221,7 +268,7 @@ export default function SignIn() {
         ) : (
           <>
             <TextInput
-              placeholder="Digite o email ou telefone"
+              placeholder="Usuário"
               style={styles.input}
               placeholderTextColor="#000"
               value={credential}
@@ -236,7 +283,11 @@ export default function SignIn() {
               onChangeText={setPassword}
             />
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Entrar</Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Entrar</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setIsRegister(true)}>
               <Text style={styles.toggleText}>Não tem uma conta? Registrar</Text>
@@ -274,8 +325,8 @@ const styles = StyleSheet.create({
   },
   registerLogo: {
     marginBottom: 12,
-    width: 150,
-    height: 150,
+    width: 160,
+    height: 90,
   },
   input: {
     width: '95%',
@@ -341,5 +392,11 @@ const styles = StyleSheet.create({
   checkboxLabel: { fontSize: 16, marginBottom: 8 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   checkboxText: { marginLeft: 8, fontSize: 16 },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10, // Espaço entre o título e a lista
+    textAlign: 'center',
+  },
   
 });

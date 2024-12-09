@@ -2,7 +2,8 @@
  import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
  import Dashboard from "../pages/Dashboard";
 import Order from "../pages/Order";
-import { Ionicons } from '@expo/vector-icons';
+import Concluidos from "../pages/Concluido";
+import {FontAwesome } from '@expo/vector-icons';
 
 
 
@@ -16,6 +17,10 @@ export type StackPramsList={
       organizationId:string;
     };
     Finish:{
+      number: number | string;
+      order_id:string;
+  };
+    Fechados:{
       number: number | string;
       order_id:string;
     };
@@ -36,17 +41,22 @@ export type StackPramsList={
           } else if (route.name === 'Concluidos') {
             iconName = 'list';
           }
+          else if (route.name === 'Fechados') {
+            iconName = 'list';
+          }
 
           // Retorna o ícone correspondente usando Ionicons
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <FontAwesome name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: 'tomato', // Cor ativa (selecionada)
-        tabBarInactiveTintColor: 'gray',  // Cor inativa (não selecionada)
-        tabBarStyle: { backgroundColor: 'lightblue' }, // Cor de fundo da aba
+        tabBarActiveTintColor: '#000', // Cor ativa (selecionada)
+        tabBarInactiveTintColor: '#ccc',  // Cor inativa (não selecionada)
+        tabBarStyle: { backgroundColor: '#3fffa3' }, // Cor de fundo da aba
       })}
     >
         <Tab.Screen name="Pendentes" component={Dashboard} />
-        <Tab.Screen name="Concluidos" component={Order} />
+      <Tab.Screen name="Concluidos" component={Order}/>
+      <Tab.Screen name="Fechados" component={Concluidos} />
+      
     </Tab.Navigator>
     
   );
