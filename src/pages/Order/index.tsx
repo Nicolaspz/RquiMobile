@@ -108,7 +108,7 @@ export default function Order() {
   const confirmCloseInvoice = async (faturaId: string) => {
     Alert.alert(
       "Fechar Fatura",
-      "Tem certeza de que deseja fechar esta fatura?",
+      "Tem certeza de que deseja fechar folha de Obra?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -123,12 +123,12 @@ export default function Order() {
               if (response.status === 200 || response.status === 201) {
                 Alert.alert("Sucesso", "Fatura fechada com sucesso!");
               } else {
-                Alert.alert("Erro", "Não foi possível fechar a fatura.");
+                Alert.alert("Erro", "Não foi possível fechar folha de obra.");
               }
             } catch (error) {
               Alert.alert(
                 "Erro",
-                "Ocorreu um erro ao tentar fechar a fatura. Tente novamente."
+                "Ocorreu um erro ao tentar fechar folha de obra. Tente novamente."
               );
               console.error("Erro ao fechar fatura:", error);
             }
@@ -192,7 +192,7 @@ export default function Order() {
                     color="#3fffa3"
                     //style={styles.serviceIcon}
                   />{" "}
-                  {pedido.tipo}
+                   {pedido.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : pedido.tipo}
                 </Text>
               )}
               <Text style={styles.orderDescription}>{pedido.descricao}</Text>
@@ -347,8 +347,9 @@ const styles = StyleSheet.create({
    },
   invoiceContainerFlex: {
     display: 'flex',
-    flexDirection:'row',
-    alignItems:'center',
+    flexDirection:'colum',
+    alignItems:'left',
+    marginLeft:8
   },
   daysRemaining: {
     fontSize: 14,

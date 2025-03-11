@@ -192,7 +192,7 @@ export default function Concluidos() {
                     color="#3fffa3"
                     //style={styles.serviceIcon}
                   />{" "}
-                  {pedido.tipo}
+                  {pedido.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : pedido.tipo}
                 </Text>
               )}
               <Text style={styles.orderDescription}>{pedido.descricao}</Text>
@@ -347,8 +347,9 @@ const styles = StyleSheet.create({
    },
   invoiceContainerFlex: {
     display: 'flex',
-    flexDirection:'row',
-    alignItems:'center',
+    flexDirection:'colum',
+    alignItems:'left',
+    marginLeft:8
   },
   daysRemaining: {
     fontSize: 14,

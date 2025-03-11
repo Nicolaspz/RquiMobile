@@ -1,13 +1,13 @@
 import React, { useState, createContext, ReactNode, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TouchableWithoutFeedback, View, Alert } from 'react-native';
+import { View } from 'react-native';
 import { api } from "../services/api";
 
 type authContextData = {
   user: UserProps;
   isAuthenticated: boolean;
   signIn: (credentials: SignInProps) => Promise<void>;
-  signUp: (data: SignUpProps) => Promise<void>; // Adicione `signUp` aqui
+  signUp: (data: SignUpProps) => Promise<void>;
   loadingAuth: boolean;
   loading: boolean;
   sigOut: () => Promise<void>;
@@ -61,22 +61,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     morada: '',
     user_name: ''
   });
+
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const inactivityTimeout = 10 * 60 * 1000; // 2 minutos em milissegundos
-  let inactivityTimer: NodeJS.Timeout;
-
-  const resetInactivityTimer = () => {
-    clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(() => {
-      sigOut(); // Chama a função de logout após o tempo de inatividade
-    }, inactivityTimeout);
-  };
-
-  const handleUserInteraction = () => {
-    resetInactivityTimer();
-  };
 
   const isAuthenticated = !!user.name;
 
@@ -92,22 +79,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     getUser();
-
-    resetInactivityTimer();
-
-    return () => {
-      clearTimeout(inactivityTimer);
-    };
   }, []);
 
   async function signIn({ credential, password }: SignInProps) {
     setLoadingAuth(true);
 
     try {
-      const response = await api.post('/session', {
-        credential,
-        password,
-      });
+      const response = await api.post('/session', { credential, password });
 
       const data = response.data;
       await AsyncStorage.setItem('@sujeitopizzaria', JSON.stringify(data));
@@ -115,11 +93,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
       setUser(data);
-      //setLoadingAuth(false);
-      resetInactivityTimer();
-    } catch (error) {
-       
-       throw error.response?.data || { error: 'Erro ao tentar se comunicar com o servidor' };
+      setLoadingAuth(false);
+    } catch (error: any) {
+      setLoadingAuth(false);
+      throw error.response?.data || { error: 'Erro ao tentar se comunicar com o servidor' };
     }
   }
 
@@ -128,15 +105,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     try {
       const response = await api.post('/users', data);
-
-      //console.log('Usuário criado com sucesso:', response.data);
-      console.log('Sucesso', 'Usuário registrado com sucesso!');
+      //console.log('Sucesso', 'Usuário registrado com sucesso!');
       setLoadingAuth(false);
-    } catch (error) {
-      console.log('Sucesso', ' erro  registrando Usuário', error);
-
-       throw error.response?.data || { error: 'Erro ao registrar usuário. Tente novamente.' };
-
+    } catch (error: any) {
+      setLoadingAuth(false);
+      console.log('Erro', 'Erro ao registrar usuário', error);
+      throw error.response?.data || { error: 'Erro ao registrar usuário. Tente novamente.' };
     }
   }
 
@@ -159,9 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated, signIn, signUp, loading, loadingAuth, sigOut }}>
-      <TouchableWithoutFeedback onPress={handleUserInteraction}>
-        <View style={{ flex: 1 }}>{children}</View>
-      </TouchableWithoutFeedback>
+      <View style={{ flex: 1 }}>{children}</View>
     </AuthContext.Provider>
   );
 }

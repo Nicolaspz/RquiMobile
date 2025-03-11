@@ -114,7 +114,7 @@ useEffect(() => {
   const renderOrderItem = ({ item }: { item: Pedido }) => (
   <View style={styles.orderContainer}>
     {/* Exibe o tipo de serviço em destaque com o mesmo estilo da descrição */}
-      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} /> {item.tipo}</Text>}
+      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} />   {item.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : item.tipo}</Text>}
     <Text style={styles.orderDescription}>Nº: {item.usuario.proces_number}  {item.usuario.tipo_pagamento}</Text>
     <Text style={styles.orderDescription}>{item.descricao}</Text>
     <TouchableOpacity onPress={() => toggleExpand(item.id)}>
@@ -158,7 +158,7 @@ useEffect(() => {
                       <Text style={styles.sendButtonText}>Enviar</Text>
                     </TouchableOpacity>
                   </View>
-                )}
+        )}
 
         {/* Botão para fechar o pedido visível apenas para administradores */}
         {user.role === "ADMIN" && (
@@ -166,7 +166,7 @@ useEffect(() => {
             style={styles.closeOrderButton}
             onPress={() => confirmAndCloseOrder(item.id)}
           >
-            <Text style={styles.closeOrderButtonText}>Fechar a Interção</Text>
+            <Text style={styles.closeOrderButtonText}>Terminar Serviço</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -194,6 +194,7 @@ useEffect(() => {
 
 async function closeOrder(orderId: string) {
   try {
+     console.log("Fechando pedido:", orderId);
     const response = await api.put('/pedido', 
       {
         id: orderId,
@@ -203,10 +204,10 @@ async function closeOrder(orderId: string) {
         headers: { Authorization: `Bearer ${user.token}` }, // Inclui o token do usuário
       }
     );
-
+    console.log("Resposta da API:", response.data);
     if (response.status === 200 || response.status === 201) {
       Toast.show({
-        type: 'Sucess',  // Pode ser 'success', 'error', 'info'
+        type: 'success',  // Pode ser 'success', 'error', 'info'
         text1: 'Sucesso',  // Título
         text2: 'Pedido fechado com sucesso!',  // Mensagem
       });
@@ -292,17 +293,17 @@ async function closeOrder(orderId: string) {
         <View style={styles.noOrdersContainer}>
           {user.role === 'ADMIN' ? (
             <Text style={styles.noOrdersText}>
-              Não Há Pedidos Pendentes, Verifique se todos Peidos foram concluidos com sucesso!
+              Não Há Pedidos Pendentes, Verifique se todos Pedidos foram concluidos com sucesso!
            
             </Text>
           ) : (
 
               <View>
                 <Text style={styles.noOrdersText}>
-              Não Há Pedidos Pendentes. Em que podemos ajudar hoje?.
+              Não Há Pedidos Pendentes.
               </Text>
                <Text style={styles.noOrdersText}>
-              Em que podemos ajudar hoje?.
+              Em que podemos ajudar?.
               </Text>
               </View>
               
@@ -318,7 +319,7 @@ async function closeOrder(orderId: string) {
 
    {user.role !== 'ADMIN' && (
     <TouchableOpacity style={styles.addButton} onPress={handleAddOrder}>
-      <Text style={styles.addButtonText}>Adicionar mais pedido</Text>
+      <Text style={styles.addButtonText}>Fazer pedido</Text>
     </TouchableOpacity>
   )}
     {/* Modal */}
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginVertical: 10,
-    textAlign: 'center',
+    textAlign: 'justify',
   },
   button: {
     backgroundColor: '#3fffa3',

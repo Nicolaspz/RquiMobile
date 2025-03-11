@@ -9,36 +9,59 @@ import {
   Modal,
   FlatList,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform
 } from "react-native";
 import { AuthContext } from "../../contexts/AuthContext";
 import { api } from "../../services/api";
 import Toast from 'react-native-toast-message';
 import Checkbox from 'expo-checkbox';
+import { Ionicons } from '@expo/vector-icons';
+import {Picker} from '@react-native-picker/picker';
 
 export default function SignIn() {
   const { signIn, signUp, sigOut } = useContext(AuthContext);
   const [isRegister, setIsRegister] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // Estado para controle do carregamento
-
   const [name, setName] = useState('');
   const [credential, setCredential] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [tipoPagamento, setTipoPagamento] = useState('CONTA_3DIAS');
+  const [tipoPagamento, setTipoPagamento] = useState('');
   const [password, setPassword] = useState('');
+   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [username, setUsername] = useState('');
   const [nif, setNif] = useState('');
   const [email, setEmail] = useState('');
   const [endereco, setEndereco] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const tipoPagamentoOptions = ["CONTA_3DIAS", "CONTA_7DIAS", "CONTA_15DIAS","CONTA_30DIAS"];
+ const [isChecked, setChecked] = useState(false);
+ 
 
+
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible);
+  };
   // Opções para redes de comunicação
-  const [redesSelecionadas, setRedesSelecionadas] = useState({
-    whatsapp: false,
+  const [redesSelecionadas, setRedesSelecionadas] = useState<{ [key: string]: boolean }>({
     chamada: false,
+    sms: false,
+    whatsapp: false,
     telegram: false,
+    outro: false,
   });
+
+  // Alterna o estado apenas da opção selecionada
+  const toggleRedesSelection = (tipo: string) => {
+    setRedesSelecionadas((prev) => ({
+      ...prev,
+      [tipo]: !prev[tipo], // Alterna entre true/false apenas para o item clicado
+    }));
+  };
+
   interface ApiError {
   error?: string; // A propriedade error é opcional
 }
@@ -85,16 +108,13 @@ export default function SignIn() {
 
 
 
-  const toggleRedesSelection = (key: keyof typeof redesSelecionadas) => {
-    setRedesSelecionadas(prev => ({ ...prev, [key]: !prev[key] }));
-  };
 
   async function handleRegister() {
     if (!name || !telefone || !tipoPagamento || !redesSelecionadas) {
       Toast.show({
-    type: 'error',  // Pode ser 'success', 'error', 'info'
-    text1: 'Erro',  // Título
-    text2: 'Preencha todos os campos obrigatórios.',  // Mensagem
+      type: 'error',  // Pode ser 'success', 'error', 'info'
+      text1: 'Erro',  // Título
+      text2: 'Preencha todos os campos obrigatórios.',  // Mensagem
   });
       
       return;
@@ -125,10 +145,10 @@ export default function SignIn() {
           'Content-Type': 'application/json',
         },
       });
-       Toast.show({
-    type: 'success',  // Pode ser 'success', 'error', 'info'
-    text1: 'Sucesso',  // Título
-    text2: 'Usuário registrado com sucesso!',  // Mensagem
+      Toast.show({
+      type: 'success',  // Pode ser 'success', 'error', 'info'
+      text1: 'Sucesso',  // Título
+      text2: 'Usuário registrado com sucesso!',  // Mensagem
   });
       //Alert.alert('Sucesso', 'Usuário registrado com sucesso!');
       setIsRegister(false);
@@ -141,7 +161,13 @@ export default function SignIn() {
   }
 
   return (
-    <View style={styles.container}>
+     <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.container}>
       <Image
         style={isRegister ? styles.registerLogo : styles.loginLogo}
         source={require('../../assets/raqi.png')}
@@ -151,109 +177,80 @@ export default function SignIn() {
         {isRegister ? (
           <>
             <TextInput
-              placeholder="Digite seu nome ou empresa*"
+              placeholder="nome/empresa*"
               style={styles.input}
-              placeholderTextColor="black"
+              placeholderTextColor="#ccc"
               value={name}
               onChangeText={setName}
             />
             <TextInput
-              placeholder="Digite seu email"
+              placeholder="email*"
               style={styles.input}
-              placeholderTextColor="#000"
+              placeholderTextColor="#ccc"
               value={email}
               onChangeText={setEmail}
             />
             <TextInput
-              placeholder="Digite nome de usuário*"
+              placeholder="nome de utilizador*"
               style={styles.input}
-              placeholderTextColor="#000"
+              placeholderTextColor="#ccc"
               value={username}
               onChangeText={setUsername}
             />
             <TextInput
-              placeholder="Digite seu telefone*"
+              placeholder="telefone*"
               style={styles.input}
-              placeholderTextColor="#000"
+              placeholderTextColor="#ccc"
               value={telefone}
               onChangeText={setTelefone}
             />
             <TextInput
-              placeholder="Digite o Nif"
+              placeholder="Nif"
               style={styles.input}
-              placeholderTextColor="#000"
+              placeholderTextColor="#ccc"
               value={nif}
               onChangeText={setNif}
             />
             <TextInput
-              placeholder="Digite o seu Endereço"
+              placeholder="Zona de operação"
               style={styles.input}
-              placeholderTextColor="#000"
+              placeholderTextColor="#ccc"
               value={endereco}
               onChangeText={setEndereco}
             />
-            <TouchableOpacity
-              style={styles.select}
-              onPress={() => setModalVisible(true)}
-            >
-              <Text style={styles.selectText}>{tipoPagamento}</Text>
-            </TouchableOpacity>
+            <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={tipoPagamento}
+          onValueChange={(itemValue) => setTipoPagamento(itemValue)}
+          style={styles.picker} // Apenas estilos suportados pelo Picker
+        >
+          <Picker.Item label="Selecionar a forma de Pagamento" value="" />
+          <Picker.Item label="CONTA 3 DIAS" value="CONTA_3DIAS" />
+          <Picker.Item label="CONTA 7 DIAS" value="CONTA_7DIAS" />
+          <Picker.Item label="CONTA 15 DIAS" value="CONTA_15DIAS" />
+          <Picker.Item label="CONTA 30 DIAS" value="CONTA_30DIAS" />
+          <Picker.Item label="CONTA 24H" value="24H" />
+        </Picker>
+      </View>
+    
 
-            <View style={styles.checkboxContainer}>
-              <Text style={styles.checkboxLabel}>Selecione o meio de comunicação:</Text>
-              <View style={styles.checkboxRow}>
-                <Checkbox
-                  value={redesSelecionadas.whatsapp}
-                  onValueChange={() => toggleRedesSelection('whatsapp')}
-                />
-                <Text style={styles.checkboxText}>WhatsApp</Text>
-              </View>
-              <View style={styles.checkboxRow}>
-                <Checkbox
-                  value={redesSelecionadas.chamada}
-                  onValueChange={() => toggleRedesSelection('chamada')}
-                />
-                <Text style={styles.checkboxText}>Chamada</Text>
-              </View>
-              <View style={styles.checkboxRow}>
-                <Checkbox
-                  value={redesSelecionadas.telegram}
-                  onValueChange={() => toggleRedesSelection('telegram')}
-                />
-                <Text style={styles.checkboxText}>Telegram</Text>
-              </View>
-            </View>
-            
-            <Modal
-              transparent={true}
-              visible={modalVisible}
-              animationType="slide"
-              onRequestClose={() => setModalVisible(false)}
-            >
-              <View style={styles.modalContainer}>
-                
-                <View style={styles.modalContent}>
-                   <Text style={styles.modalTitle}>Selecione o tipo de conta:</Text>
-                  <FlatList
-                    data={tipoPagamentoOptions}
-                    keyExtractor={(item) => item}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.option}
-                        onPress={() => {
-                          setTipoPagamento(item);
-                          setModalVisible(false);
-                        }}
-                      >
-                        
-                        <Text style={styles.optionText}>{item}</Text>
-                      </TouchableOpacity>
-                    )}
-                  />
-                </View>
-              </View>
-            </Modal>
+    <View style={styles.container2}>
+      <Text style={styles.title}>Selecione a preferência de contato:</Text>
 
+      {Object.keys(redesSelecionadas).map((tipo) => (
+        <View key={tipo} style={styles.checkboxRow}>
+          <Checkbox
+            color={isChecked ? '#1af344' : undefined}
+            value={redesSelecionadas[tipo]}
+            onValueChange={() => toggleRedesSelection(tipo)}
+          />
+          <Text style={styles.checkboxText}>
+            {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+          </Text>
+        </View>
+      ))}
+      </View>
+           
             <TouchableOpacity style={styles.button} onPress={handleRegister}>
               {isLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -262,50 +259,121 @@ export default function SignIn() {
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setIsRegister(false)}>
-              <Text style={styles.toggleText}>Já tem uma conta? Acessar</Text>
+              <Text style={styles.toggleText}>Entrar </Text>
             </TouchableOpacity>
           </>
         ) : (
-          <>
+          <View style={styles.inputWithIcon}>
             <TextInput
-              placeholder="Usuário"
-              style={styles.input}
-              placeholderTextColor="#000"
+              placeholder="Utitlizador/Telefone"
+              style={styles.input2}
+              placeholderTextColor="#ccc"
               value={credential}
               onChangeText={setCredential}
             />
-            <TextInput
-              placeholder="Sua senha"
-              style={styles.input}
-              placeholderTextColor="#000"
-              secureTextEntry={true}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Entrar</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsRegister(true)}>
-              <Text style={styles.toggleText}>Não tem uma conta? Registrar</Text>
-            </TouchableOpacity>
-          </>
+             <View style={styles.responsive}>
+                <TextInput
+                  style={styles.input1}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Senha"
+                  placeholderTextColor="#ccc"
+                  secureTextEntry={!isPasswordVisible} // Alterna entre mostrar ou ocultar
+                />
+                <TouchableOpacity
+                  style={styles.iconContainer}
+                  onPress={togglePasswordVisibility}
+                >
+                <Ionicons
+                  name={isPasswordVisible ? 'eye-off' : 'eye'} // Ícone muda dinamicamente
+                  size={24}
+                  color="#333"
+                  style={styles.iconStile}
+                />
+                </TouchableOpacity>      
+            </View>
+                <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>Entrar</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsRegister(true)}>
+                  <Text style={styles.toggleText}>Criar Conta</Text>
+                </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  inputWithIcon: {
+  width: '95%',
+  marginBottom: 12,
+},
+responsive: {
+  flexDirection: "row", // Ícone ao lado do input
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#1af344",
+    paddingHorizontal: 10,
+    marginBottom: 15,
+  },
+  tamanho: {
+    borderWidth: 1,
+    borderColor: "#000",
+    
+  },
+  input1: {
+    flex: 1,
+    height: 50,
+    fontSize: 16,
+    color: "#444",
+    
+  },
+  input2: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#1af344",
+    marginBottom: 12,
+    borderRadius:10,
+    paddingHorizontal: 8,
+    color: "#444",
+    fontSize: 16,
+    padding: 10,
+  },
+input: {
+    width: '95%',
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#1af344",
+    marginBottom: 12,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    color: "#444",
+    fontSize:16,
+    textAlign:"justify"
+  }, 
+iconContainer: {
+  padding: 10,
+},
+iconStile:{},
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff'
   },
+ 
   logo: {
     marginBottom: 12,
     width: 140,
@@ -328,18 +396,8 @@ const styles = StyleSheet.create({
     width: 160,
     height: 90,
   },
-  input: {
-    width: '95%',
-    height: 40,
-    backgroundColor: '#1af344',
-    marginBottom: 12,
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    color: '#000',
-    fontSize:16,
-  },
   select: {
-    width: '95%',
+    width: '100%',
     height: 40,
     backgroundColor: '#1af344',
     justifyContent: 'center',
@@ -348,11 +406,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   selectText: {
-    color: '#000',
+    color: '#0000ff',
   },
   button: {
-    width: '95%',
+    width: '100%',
     height: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor:'#0000ff',
     backgroundColor: '#0000ff',
     justifyContent: 'center',
     alignItems: 'center'
@@ -375,7 +436,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
+    width: '95%',
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
@@ -386,17 +447,62 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
-    color: '#101026',
+    color: '#1af344',
+    textAlign: 'center',
+    borderRadius: 20,
+    borderWidth:1,
+    borderColor: '#ccc',
+    
+    
   },
   checkboxContainer: { marginBottom: 20 },
   checkboxLabel: { fontSize: 16, marginBottom: 8 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  checkboxText: { marginLeft: 8, fontSize: 16 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 , color:'#1af344' },
+  checkboxText: { marginLeft: 8, fontSize: 16, color:'#3c3c3c' },
   modalTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10, // Espaço entre o título e a lista
     textAlign: 'center',
   },
+  //
+  container2: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color:'#3b9aff',
+  },
+  picker: {
+    height: 50,
+    width: "95%",
+    borderWidth: 1,
+    borderColor: "#1af344",
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 4,
+    textAlign: 'center',
+    color:"#444",
+  },
+  pickerItem: {
+    textAlign: 'center', // Funciona apenas no iOS
+    fontSize: 16, 
+  },
+  pickerContainer: {
+    width: '95%',
+    borderWidth: 1,
+    borderColor: '#1af344',
+    borderRadius: 4,
+    backgroundColor: '#fff',
+    overflow: 'hidden', // Garante que o borderRadius funcione
+  },
+  /*picker: {
+    width: '100%', 
+    height: 50,
+    color: '#444', // Cor do texto dentro do Picker
+    fontSize: 16, // Tamanho da fonte dentro do Picker (pode não funcionar em alguns dispositivos)
+  },*/
   
 });

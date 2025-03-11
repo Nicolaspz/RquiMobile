@@ -3,7 +3,9 @@
  import Dashboard from "../pages/Dashboard";
 import Order from "../pages/Order";
 import Concluidos from "../pages/Concluido";
-import {FontAwesome } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
+import Profile from "../pages/Profile";
+
 
 
 
@@ -36,26 +38,31 @@ export type StackPramsList={
         tabBarIcon: ({ color, size }) => {
           let iconName;
 
-          if (route.name === 'Pendentes') {
+          if (route.name === 'Pedidos') {
             iconName = 'home';
-          } else if (route.name === 'Concluidos') {
+          } else if (route.name === 'Abertos') {
             iconName = 'list';
           }
           else if (route.name === 'Fechados') {
             iconName = 'list';
+          }
+          else if (route.name === 'Perfil') {
+             iconName = 'user';
           }
 
           // Retorna o ícone correspondente usando Ionicons
           return <FontAwesome name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#000', // Cor ativa (selecionada)
-        tabBarInactiveTintColor: '#ccc',  // Cor inativa (não selecionada)
-        tabBarStyle: { backgroundColor: '#3fffa3' }, // Cor de fundo da aba
+        tabBarInactiveTintColor: '#3fffa3',  // Cor inativa (não selecionada)
+        tabBarStyle: { backgroundColor: '#fff' }, // Cor de fundo da aba
       })}
     >
-        <Tab.Screen name="Pendentes" component={Dashboard} />
-      <Tab.Screen name="Concluidos" component={Order}/>
+      <Tab.Screen name="Pedidos" component={Dashboard} />
+      <Tab.Screen name="Abertos" component={Order}/>
       <Tab.Screen name="Fechados" component={Concluidos} />
+      <Tab.Screen name="Perfil" component={Profile} />
+
       
     </Tab.Navigator>
     
