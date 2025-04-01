@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "819672969615",
+    "project_id": "rdb2-89a4b",
+    "storage_bucket": "rdb2-89a4b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:819672969615:android:4b21f5842c8c7551251bfa",
+        "android_client_info": {
+          "package_name": "com.nicolaspz.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmFYxqzFurPHixGrTnrx0uKs3b5VJhrMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

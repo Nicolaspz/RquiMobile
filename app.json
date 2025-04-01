@@ -2,7 +2,7 @@
   "expo": {
     "name": "RDB Transportes",
     "slug": "rdbentrega",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/IconR.png",
     "userInterfaceStyle": "light",
@@ -18,12 +18,17 @@
       "supportsTablet": true
     },
     "android": {
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/rforeground.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.nicolaspz.mobile"
+      "package": "com.nicolaspz.mobile",
+      "config": {
+        "googleSignIn": {
+          "certificateHash": "0D:B5:00:04:72:34:B8:E2:36:E2:C6:4A:7D:8E:1D:BC:10:EC:58:49"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

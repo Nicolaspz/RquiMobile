@@ -1,18 +1,55 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { 
-  View, Text, TouchableOpacity, Modal, TextInput, Alert, StyleSheet, KeyboardAvoidingView, Platform 
+  View, Text, TouchableOpacity, Modal, TextInput, Alert, StyleSheet, KeyboardAvoidingView, Platform, FlatList,Button, ScrollView, TouchableWithoutFeedback, Keyboard, 
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../../contexts/AuthContext";
 import { api } from "../../services/api";
+
+interface User {
+  id: string;
+  name: string;
+  email?: string;
+  telefone: string;
+  tipo_pagamento?: string;
+  role: string;
+  user_name: string;
+}
 
 export default function Profile() {
   const { user, sigOut } = useContext(AuthContext);
   const navigation = useNavigation();
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [newPasswordrepeat, setNewPasswordrepeat] = useState<string>("");
+
+  const [newPhone, setNewPhone] = useState<string>("");
+  const [newPayment, setNewPayment] = useState<string>("");
+  const [newName, setNewName] = useState<string>("");
+  const [newEmail, setNewEmail] = useState<string>("");
+  const [newRole, setNewRole] = useState<string>("");
+  const [newUsername, setNewUsername] = useState<string>("");
+
+  useEffect(() => {
+    if (user.role === "ADMIN") {
+      fetchUsers();
+    }
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/all_users", {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setUsers(response.data);
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível carregar os usuários.");
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -22,94 +59,144 @@ export default function Profile() {
     }
   };
 
-    const handleChangePassword = async () => {
-      if (!currentPassword || !newPassword) {
-        Alert.alert("Erro", "Preencha todos os campos!");
-        return;
-      }
+  const handleUpdateUser = async () => {
+  if (!selectedUser) return;
+    if (newPassword && newPassword !== newPasswordrepeat) {
+    Alert.alert("As senhas não coincidem!");
+    return;
+  }
+  // Criar objeto apenas com os campos preenchidos
+  const updatedData: any = {};
+  
+  if (newPhone.trim()) updatedData.telefone = newPhone;
+  if (newPayment.trim()) updatedData.tipo_pagamento = newPayment;
+  if (newPassword.trim()) updatedData.password = newPassword;
+  if (user.role === "ADMIN") {
+    if (selectedUser.name.trim()) updatedData.name = selectedUser.name;
+    if (selectedUser.email?.trim()) updatedData.email = selectedUser.email;
+    if (selectedUser.role.trim()) updatedData.role = selectedUser.role;
+  }
 
-      try {
-        const user_id = user.id; // Pegue o ID do usuário dinamicamente
+  try {
+    await api.put(
+      `/user?userId=${selectedUser.id}`,
+      updatedData, // Enviar apenas os dados preenchidos
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    );
 
-        // Chamada à API com user_id na URL
-       await api.put(`/change-password?user_id=${user_id}`, 
-        { oldPassword: currentPassword, newPassword },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-        Alert.alert("Sucesso", "Senha alterada com sucesso!");
-        await sigOut();
-        //setModalVisible(false); // Fecha o modal
-      } catch (error: any) {
-        Alert.alert("Erro", error.response?.data?.message || "Não foi possível alterar a senha.");
-      }
-    };
-
+    Alert.alert("Sucesso", "Usuário atualizado com sucesso!");
+    fetchUsers();
+    setModalVisible(false);
+    setNewPassword("");
+  } catch (error) {
+    Alert.alert("Erro", "Não foi possível atualizar o usuário.");
+  }
+};
 
   return (
+  
     <View style={styles.container}>
       <Text style={styles.title}>Perfil</Text>
 
-      {/* Botão para abrir o modal de alterar senha */}
-      <TouchableOpacity 
-        onPress={() => setModalVisible(true)} 
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>Alterar Senha</Text>
-      </TouchableOpacity>
+      {user.role === "ADMIN" ? (
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.userContainer}>
+              <Text>{item.name}</Text>
+              <TouchableOpacity onPress={() => { 
+                setSelectedUser(item);
+                setNewPhone(item.telefone);
+                setNewUsername(item.user_name);
+                setNewPayment(item.tipo_pagamento || "");
+                setNewName(item.name);
+                setNewEmail(item.email || "");
+                setNewRole(item.role);
+                setModalVisible(true);
+              }} style={styles.button}>
+                <Text style={styles.buttonText}>Alterar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      ) : (
+        <TouchableOpacity onPress={() => {
+          setSelectedUser(user);
+          setNewPhone(user.telefone);
+          setNewUsername(user.user_name);
+          setModalVisible(true);
+        }} style={styles.button}>
+          <Text style={styles.buttonText}>Alterar Perfil</Text>
+        </TouchableOpacity>
+      )}
 
-      {/* Botão de Logout */}
-      <TouchableOpacity 
-        onPress={handleLogout} 
-        style={[styles.button, { backgroundColor: "red" }]}
-      >
+      <TouchableOpacity onPress={handleLogout} style={[styles.button, { backgroundColor: "red", marginTop: 20 }]}> 
         <Text style={styles.buttonText}>Sair</Text>
       </TouchableOpacity>
 
-      {/* Modal de Alteração de Senha */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalContainer}
-        >
+      <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Alterar Senha</Text>
+            <Text style={styles.modalTitle}>Alterar Usuário</Text>
+            <View>
+              <Text>Telefone</Text>
+            <TextInput placeholder="Telefone" style={styles.input} value={newPhone} onChangeText={setNewPhone} />
+              
+            </View>
+            <View>
+              <Text>Usuário</Text>
+            <TextInput placeholder="Username" style={styles.input} value={newUsername} onChangeText={setNewUsername} />
+            </View>
+            <View>
+              <Text>Nova senha</Text>
+              <TextInput placeholder="Nova Senha" secureTextEntry style={styles.input} value={newPassword} onChangeText={setNewPassword} />
+            </View>
+            <View>
+              <Text>Repetir senha</Text>
+              <TextInput placeholder="Nova Senha" secureTextEntry style={styles.input} value={newPasswordrepeat} onChangeText={setNewPasswordrepeat} />
+            </View>
+            {user.role === "ADMIN" && (
+              <>
+                <View>
+                  <Text>Nome</Text>
+                <TextInput placeholder="Nome" style={styles.input} value={newName} onChangeText={setNewName} />
 
-            <TextInput
-              placeholder="Senha Atual"
-              secureTextEntry
-              style={styles.input}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-            />
+                </View>
+                <View>
+                  <Text>Email</Text>
+                <TextInput placeholder="Email" style={styles.input} value={newEmail} onChangeText={setNewEmail} />
 
-            <TextInput
-              placeholder="Nova Senha"
-              secureTextEntry
-              style={styles.input}
-              value={newPassword}
-              onChangeText={setNewPassword}
-            />
-
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={[styles.buttonModal, { backgroundColor: "#3fffa3" }]} 
-                onPress={handleChangePassword}
-              >
-                <Text style={styles.buttonText}>Salvar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.buttonModal, { backgroundColor: "gray" }]} 
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
+                </View>
+                <View>
+                  <Text>Perfil</Text>
+                  <Picker selectedValue={newRole} onValueChange={setNewRole}>
+                  <Picker.Item label="ADMIN" value="ADMIN" />
+                  <Picker.Item label="CLIENTE" value="CLIENT" />
+                </Picker>
+                </View>
+                
+                <View>
+                  <Text>Tipo de Pagamento</Text>
+                  <Picker selectedValue={newPayment} onValueChange={setNewPayment}>
+                  <Picker.Item label="Selecionar a forma de Pagamento" value="" />
+                  <Picker.Item label="CONTA 3 DIAS" value="CONTA_3DIAS" />
+                  <Picker.Item label="CONTA 7 DIAS" value="CONTA_7DIAS" />
+                  <Picker.Item label="CONTA 15 DIAS" value="CONTA_15DIAS" />
+                  <Picker.Item label="CONTA 30 DIAS" value="CONTA_30DIAS" />
+                  <Picker.Item label="CONTA 24H" value="CONTA_24H" />
+                </Picker>
+                </View>
+                
+              </>
+            )}
+            <View style={{display:"flex", flexDirection:"row"}}>
+              <TouchableOpacity style={[styles.buttonModal, { backgroundColor: "#3fffa3" }]} onPress={handleUpdateUser}>
+              <Text style={styles.buttonText}>Salvar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.buttonModal, { backgroundColor: "gray" }]} onPress={() => setModalVisible(false)}>
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -118,70 +205,76 @@ export default function Profile() {
   );
 }
 
+
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { 
+    flex: 1, 
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f5f5f5"
   },
   title: {
     fontSize: 20,
     marginBottom: 20,
-    fontWeight: "bold",
+    fontWeight: "bold"
+  },
+  userContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "90%",
+    padding: 10,
+    backgroundColor: "#fff",
+    marginBottom: 10,
+    borderRadius: 5
   },
   button: {
     backgroundColor: "#3fffa3",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    marginBottom: 10,
-    width: 150,
-    alignItems: "center",
+    alignItems: "center"
   },
   buttonText: {
     color: "#000",
     fontSize: 14,
     fontWeight: "bold",
+
   },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)"
   },
   modalContent: {
-    width: "90%",
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
-    alignItems: "center",
+    width: "90%"
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: 10
   },
   input: {
-    width: "100%",
-    height: 40,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#ddd",
     borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    padding: 5,
+    marginBottom: 5
   },
-  buttonContainer: {
+  buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 10,
+    justifyContent: "space-between"
   },
   buttonModal: {
-    flex: 1,
-    paddingVertical: 10,
+    width: "48%",
+    paddingVertical: 12,
     borderRadius: 5,
     alignItems: "center",
-    marginHorizontal: 5, // Espaço entre os botões
-  },
+    margin:4
+  }
 });
