@@ -5,14 +5,14 @@ import Order from "../pages/Order";
 import Concluidos from "../pages/Concluido";
 import { FontAwesome } from '@expo/vector-icons';
 import Profile from "../pages/Profile";
-
-
-
-
+import Archived from "../pages/Archived";
 
 
 export type StackPramsList={
-    Dashboard:undefined;
+    Dashboard: undefined;
+    Pedidos: undefined; 
+    Perfil: undefined;
+    Archived: undefined;
     Order:{
       number: number | string;
       order_id:string;
@@ -23,6 +23,10 @@ export type StackPramsList={
       order_id:string;
   };
     Fechados:{
+      number: number | string;
+      order_id:string;
+    };
+    Arquivados:{
       number: number | string;
       order_id:string;
     };
@@ -46,6 +50,9 @@ export type StackPramsList={
           else if (route.name === 'Fechados') {
             iconName = 'list';
           }
+          else if (route.name === 'Arquivados') {
+            iconName = 'archive';
+          }
           else if (route.name === 'Perfil') {
              iconName = 'user';
           }
@@ -61,6 +68,7 @@ export type StackPramsList={
       <Tab.Screen name="Pedidos" component={Dashboard} />
       <Tab.Screen name="Abertos" component={Order}/>
       <Tab.Screen name="Fechados" component={Concluidos} />
+      <Tab.Screen name="Arquivados" component={Archived} />
       <Tab.Screen name="Perfil" component={Profile} />
 
       

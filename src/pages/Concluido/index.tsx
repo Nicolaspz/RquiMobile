@@ -44,7 +44,6 @@ type Interacao = {
   
 };
 
-//const socket = io("http://10.20.23.66:3000");
 
 export default function Concluidos() {
   const [invoices, setInvoices] = useState<Fatura[]>([]);
@@ -140,97 +139,111 @@ export default function Concluidos() {
 
   return (
     <View style={styles.invoiceContainer}>
-      <View style={styles.invoiceContainerFlex}>
-        <Text style={styles.invoiceNumber}>{item.numero}</Text>
-        <Text style={[styles.invoiceStatus, { color: statusColor }]}>
-          {item.status}
-        </Text>
-        <Text style={styles.invoiceUsuario}>{item.usuario.proces_number}</Text>
-        <Text style={styles.invoiceUsuario}>{item.usuario.tipo_pagamento}</Text>
-      </View>
-
-      <Text style={[styles.invoiceDueDate, { color: statusColor }]}>
-        Vencimento: {new Date(item.data_vencimento).toLocaleDateString()}
-      </Text>
-
-      <Text style={[styles.daysRemaining, { color: statusColor }]}>
-        {daysRemaining > 0
-          ? `${daysRemaining} ${
-              daysRemaining === 1 ? "dia" : "dias"
-            } restantes`
-          : daysRemaining === 0
-          ? "Vencimento hoje"
-          : "Fatura vencida"}
-      </Text>
-
-      <TouchableOpacity onPress={() => toggleExpand(item.id)}>
-        <FontAwesome
-          name={expandedInvoiceId === item.id ? "chevron-up" : "chevron-down"}
-          size={20}
-          color="#3fffa3"
-          style={styles.expandIcon}
-        />
-      </TouchableOpacity>
-
-      {/* Botão para fechar a fatura */}
-      <TouchableOpacity
-        onPress={() => confirmCloseInvoice(item.id)}
-        //style={styles.closeInvoiceButton}
-      >
-        <FontAwesome name="check-circle" size={20} color="#ff6666" />
-      </TouchableOpacity>
-
-      {expandedInvoiceId === item.id && (
-        <View>
-          {item.servicos.map((pedido) => (
-            <View key={pedido.id} style={styles.orderContainer}>
-              {pedido.tipo && (
-                <Text style={styles.serviceType}>
-                  <FontAwesome
-                    name="motorcycle"
-                    size={20}
-                    color="#3fffa3"
-                    //style={styles.serviceIcon}
-                  />{" "}
-                  {pedido.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : pedido.tipo}
+          <View style={styles.invoiceContainerFlex}>
+            <View style={{ 'display': "flex", 'flexDirection': "row", "alignContent": "center", 'alignItems': "center", "gap": 10 }}>
+              <View>
+                <Text style={styles.invoiceNumber}>{item.numero} </Text>
+              </View>
+              <View>
+                <Text style={[styles.invoiceStatus, { color: statusColor }]}>
+                  {item.status}
                 </Text>
-              )}
-              <Text style={styles.orderDescription}>{pedido.descricao}</Text>
-              <TouchableOpacity onPress={() => toggleExpandd(pedido.id)}>
+              </View>
+            </View>
+            <View style={{ 'display': "flex", 'flexDirection': "row", "alignContent": "center", 'alignItems': "center", "gap": 10 }}>
+              <Text style={styles.invoiceUsuario}>{item.usuario.tipo_pagamento}</Text>
+              <Text style={styles.invoiceUsuario}>{item.usuario.proces_number}</Text>
+           </View>
+            
+          </View>
+    
+          <Text style={[styles.invoiceDueDate, { color: statusColor, 'paddingLeft':8 }]}>
+            Vencimento: {new Date(item.data_vencimento).toLocaleDateString()}
+          </Text>
+    
+          <Text style={[styles.daysRemaining, { color: statusColor ,'paddingLeft':8}]}>
+            {daysRemaining > 0
+              ? `${daysRemaining} ${
+                  daysRemaining === 1 ? "dia" : "dias"
+                } restantes`
+              : daysRemaining === 0
+              ? "Vencimento hoje"
+              : "Fatura vencida"}
+          </Text>
+    
+          <View style={{'display':"flex",'flexDirection':"row", "alignContent":"center", 'alignItems':"center",'justifyContent':"space-between"}}>
+                <TouchableOpacity onPress={() => toggleExpand(item.id)} style={{'marginBottom':4}}>
                 <FontAwesome
-                  name={expandedOrderId === pedido.id ? "eye-slash" : "eye"}
-                  size={28}
+                  name={expandedInvoiceId === item.id ? "chevron-up" : "chevron-down"}
+                  size={20}
                   color="#3fffa3"
                   style={styles.expandIcon}
                 />
               </TouchableOpacity>
-              {expandedOrderId === pedido.id && (
-                <View>
-                  {pedido.Interacao.map((interacao) => (
-                    <View
-                      key={interacao.id}
-                      style={[
-                        styles.interactionContainer,
-                        interacao.tipo === "ADMIN"
-                          ? styles.adminInteraction
-                          : styles.clientInteraction,
-                      ]}
-                    >
-                      <Text style={styles.interactionText}>
-                        {interacao.conteudo}
-                      </Text>
-                      <Text style={styles.interactionDate}>
-                        {new Date(interacao.criado_em).toLocaleString()}
-                      </Text>
+    
+              {/* Botão para fechar a fatura */}
+              {user.role === 'ADMIN' && (
+                <TouchableOpacity onPress={() => confirmCloseInvoice(item.id)} style={{}}>
+                  <FontAwesome name="check-circle" size={20} color="#ff6666" />
+                </TouchableOpacity>
+            )}
+            
+          </View>
+    
+          
+    
+    
+          {expandedInvoiceId === item.id && (
+            <View>
+              {item.servicos.map((pedido) => (
+                <View key={pedido.id} style={styles.orderContainer}>
+                  {pedido.tipo && (
+                    <Text style={styles.serviceType}>
+                      <FontAwesome
+                        name="motorcycle"
+                        size={20}
+                        color="#3fffa3"
+                        //style={styles.serviceIcon}
+                      />{" "}
+                       {pedido.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : pedido.tipo}
+                    </Text>
+                  )}
+                  <Text style={styles.orderDescription}>{pedido.descricao}</Text>
+                  <TouchableOpacity onPress={() => toggleExpandd(pedido.id)}>
+                    <FontAwesome
+                      name={expandedOrderId === pedido.id ? "eye-slash" : "eye"}
+                      size={28}
+                      color="#3fffa3"
+                      style={styles.expandIcon}
+                    />
+                  </TouchableOpacity>
+                  {expandedOrderId === pedido.id && (
+                    <View>
+                      {pedido.Interacao.map((interacao) => (
+                        <View
+                          key={interacao.id}
+                          style={[
+                            styles.interactionContainer,
+                            interacao.tipo === "ADMIN"
+                              ? styles.adminInteraction
+                              : styles.clientInteraction,
+                          ]}
+                        >
+                          <Text style={styles.interactionText}>
+                            {interacao.conteudo}
+                          </Text>
+                          <Text style={styles.interactionDate}>
+                            {new Date(interacao.criado_em).toLocaleString()}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
+                  )}
                 </View>
-              )}
+              ))}
             </View>
-          ))}
+          )}
         </View>
-      )}
-    </View>
   );
 };
 

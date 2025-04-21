@@ -7,21 +7,19 @@ import { api } from "../../services/api";
 import { AuthContext } from "../../contexts/AuthContext";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import { sendPushNotification } from "../../Components/sendPushNotification";
+import { sendPushNotification } from "../../Components/sendPushNotification"; 
+
 
 type Pedido = {
   id: string;
   descricao: string;
   status: string;
-  numero: BigInteger;
   Interacao: Interacao[];
   tipo: string;
-  usuarioId: string;
-  created_at: string;
   usuario: {
     proces_number: string;
     tipo_pagamento: string;
-    
+    usuarioId: string;
   };
 };
 
@@ -50,9 +48,9 @@ useEffect(() => {
     async function fetchOrders() {
       setIsLoading(true); // Ativa o carregamento
       try {
-        const url = user.role === "ADMIN" ? "/pedidos" : `/pedido_user/${user.id}`;
+        const url = user.role === "ADMIN" ? "/pedidos" : /pedido_user/${user.id};
         const response = await api.get(url, {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: Bearer ${user.token} },
         });
         const filteredOrders = response.data.filter((order: Pedido) => order.status === "PENDENTE");
         setOrders(filteredOrders);
@@ -87,26 +85,27 @@ useEffect(() => {
         servicoId: orderId,
         tipo: user.role,
       }, {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: Bearer ${user.token} },
       });
       
 
       if (response.status === 201) {
-         const tipoInteracao = response.data.interacao.tipo;
-              console.log("destinouser" + usuarioId);
-              // Determinar para quem enviar a notificação
-              const destinatarioId =
-                tipoInteracao === "ADMIN" ? usuarioId : "a38791cb-87ba-4644-823e-23bcd0919a89";
         
-              // Enviar a notificação
-             const sms= await sendPushNotification({
-                userId: destinatarioId,
-                title: "RDB Transportes",
-                message,
-                
-              });
-              //console.log("notificação enviada",sms)
-              setNewInteractionContent("");
+        const tipoInteracao = response.data.interacao.tipo;
+      console.log("destinouser" + usuarioId);
+      // Determinar para quem enviar a notificação
+      const destinatarioId =
+        tipoInteracao === "ADMIN" ? usuarioId : "a38791cb-87ba-4644-823e-23bcd0919a89";
+
+      // Enviar a notificação
+      await sendPushNotification({
+        userId: destinatarioId,
+        title: "RDB Transportes",
+        message,
+        
+      });
+        
+        setNewInteractionContent("");
         setOrders(orders.map(order => 
           order.id === orderId ? { ...order, Interacao: [...order.Interacao, response.data] } : order
         ));
@@ -127,22 +126,9 @@ useEffect(() => {
   const renderOrderItem = ({ item }: { item: Pedido }) => (
   <View style={styles.orderContainer}>
     {/* Exibe o tipo de serviço em destaque com o mesmo estilo da descrição */}
-      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} />   {item.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : item.tipo} Nº { item.numero}</Text>}
-      <Text style={styles.orderDescription}>Cliente: {item.usuario.proces_number}  {item.usuario.tipo_pagamento}</Text>
-      <View style={styles.orderDate}>
-     <Text style={styles.data} >
-              {new Date(item.created_at).toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-        </Text>
-      
-</View>
-
-    <Text style={styles.orderDesc}>{item.descricao}</Text>
+      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} />   {item.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : item.tipo}</Text>}
+    <Text style={styles.orderDescription}>Nº: {item.usuario.proces_number}  {item.usuario.tipo_pagamento}</Text>
+    <Text style={styles.orderDescription}>{item.descricao}</Text>
     <TouchableOpacity onPress={() => toggleExpand(item.id)}>
       <FontAwesome
         name={expandedOrderId === item.id ? "eye-slash" : "eye"} // Altera o ícone conforme o estado expandido
@@ -179,7 +165,7 @@ useEffect(() => {
                     />
                     <TouchableOpacity
                       style={styles.sendButton}
-                      onPress={() => handleAddInteraction(item.id,item.usuarioId,newInteractionContent)}
+                      onPress={() => handleAddInteraction(item.id,item.usuario.usuarioId,newInteractionContent)}
                     >
                       <Text style={styles.sendButtonText}>Enviar</Text>
                     </TouchableOpacity>
@@ -227,7 +213,7 @@ async function closeOrder(orderId: string) {
         status: 'CONCLUIDO',
       },
       {
-        headers: { Authorization: `Bearer ${user.token}` }, // Inclui o token do usuário
+        headers: { Authorization: Bearer ${user.token} }, // Inclui o token do usuário
       }
     );
     console.log("Resposta da API:", response.data);
@@ -279,7 +265,7 @@ async function closeOrder(orderId: string) {
         usuarioId: user.id,
         status: 'PENDENTE',
       }, {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: Bearer ${user.token} },
       });
 
       if (response.status === 201) {
@@ -319,7 +305,7 @@ async function closeOrder(orderId: string) {
         <View style={styles.noOrdersContainer}>
           {user.role === 'ADMIN' ? (
             <Text style={styles.noOrdersText}>
-              Não há Pedidos Pendentes, Verifique se todos Pedidos foram concluidos com sucesso!
+              Não Há Pedidos Pendentes, Verifique se todos Pedidos foram concluidos com sucesso!
            
             </Text>
           ) : (
@@ -337,8 +323,8 @@ async function closeOrder(orderId: string) {
       </View>
     ) : (
       <FlatList
-        data={orders ?? []}
-        keyExtractor={(item, index) => item.id ? String(item.id) : String(index)}
+        data={orders}
+        keyExtractor={(item) => item.id}
         renderItem={renderOrderItem}
       />
     )}
@@ -472,23 +458,7 @@ const styles = StyleSheet.create({
   },
   orderDescription: {
     color: '#fff',
-    paddingLeft: 18,
-  },
-  orderDesc: {
-    color: '#fff',
-    paddingLeft: 18,
-    paddingTop:4,
-  },
-  orderDate: {
-   color: '#fff',
-    paddingLeft: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3fffa3',
-    marginBottom:10,
-  },
-  data: {
-   color: '#ccc',
-    
+    paddingLeft:18,
   },
   addButton: {
     backgroundColor: '#3fffa3',

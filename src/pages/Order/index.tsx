@@ -33,6 +33,7 @@ type Pedido = {
   descricao: string;
   status: string;
   tipo: string;
+  numero: BigInt;
   Interacao: Interacao[];
 };
 
@@ -105,10 +106,51 @@ export default function Order() {
     statusColor = "#ffcc00"; // Amarelo (próximo do vencimento)
   }
 
-  const confirmCloseInvoice = async (faturaId: string) => {
+    const confirmCloseInvoice = async (faturaId: string) => {
+      Alert.alert(
+        "Fechar Folha de Obra",
+        "Tem certeza de que deseja fechar folha de Obra?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Sim",
+            onPress: async () => {
+              try {
+                const response = await api.put(`/fatura/${faturaId}`, {
+                  status: "FECHADA",
+                });
+
+                if (response.status === 200 || response.status === 201) {
+                  Alert.alert("Sucesso", "Fatura fechada com sucesso!");
+                }
+              } catch (error: any) {
+                // Acesso à resposta do servidor
+                console.log("Erro",error);
+                const status = error.response?.status;
+                const message = error.response?.data?.error || "Erro desconhecido";
+                console.log("status", status);
+                if (status === 500) {
+                  Alert.alert("Não é possível fechar a fatura", "existem pedidos não concluídos. Fechar ou Arquivar "); // mostra mensagem personalizada do backend
+                } else {
+                  Alert.alert(
+                    "Erro",
+                    "Ocorreu um erro ao tentar fechar folha de obra. Tente novamente."
+                  );
+                }
+
+                console.error("Erro ao fechar fatura:", error);
+              }
+            },
+          },
+        ]
+      );
+    };
+
+
+   const confirmArquiveService = async (faturaId: string) => {
     Alert.alert(
-      "Fechar Fatura",
-      "Tem certeza de que deseja fechar folha de Obra?",
+      "Arquivar o Pedido",
+      "Tem certeza de que deseja arquivar o pedido?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -116,14 +158,14 @@ export default function Order() {
           onPress: async () => {
             try {
               // Requisição para fechar a fatura
-              const response = await api.put(`/fatura/${faturaId}`, {
-                status: "FECHADA",
+              const response = await api.put(`/pedido_arqhive/${faturaId}`, {
+                status: "ARQUIVADA",
               });
 
               if (response.status === 200 || response.status === 201) {
-                Alert.alert("Sucesso", "Fatura fechada com sucesso!");
+                Alert.alert("Sucesso", "Pedido arquivado com sucesso!");
               } else {
-                Alert.alert("Erro", "Não foi possível fechar folha de obra.");
+                Alert.alert("erro:", "não foi possivel arquivar o pedido.");
               }
             } catch (error) {
               Alert.alert(
@@ -136,24 +178,33 @@ export default function Order() {
         },
       ]
     );
-  };
+  };   
 
   return (
     <View style={styles.invoiceContainer}>
       <View style={styles.invoiceContainerFlex}>
-        <Text style={styles.invoiceNumber}>{item.numero}</Text>
-        <Text style={[styles.invoiceStatus, { color: statusColor }]}>
-          {item.status}
-        </Text>
-        <Text style={styles.invoiceUsuario}>{item.usuario.proces_number}</Text>
-        <Text style={styles.invoiceUsuario}>{item.usuario.tipo_pagamento}</Text>
+        <View style={{ 'display': "flex", 'flexDirection': "row", "alignContent": "center", 'alignItems': "center", "gap": 10 }}>
+          <View>
+            <Text style={styles.invoiceNumber}>{item.numero} </Text>
+          </View>
+          <View>
+            <Text style={[styles.invoiceStatus, { color: statusColor }]}>
+              {item.status}
+            </Text>
+          </View>
+        </View>
+        <View style={{ 'display': "flex", 'flexDirection': "row", "alignContent": "center", 'alignItems': "center", "gap": 10 }}>
+          <Text style={styles.invoiceUsuario}>{item.usuario.tipo_pagamento}</Text>
+          <Text style={styles.invoiceUsuario}>{item.usuario.proces_number}</Text>
+       </View>
+        
       </View>
 
-      <Text style={[styles.invoiceDueDate, { color: statusColor }]}>
+      <Text style={[styles.invoiceDueDate, { color: statusColor, 'paddingLeft':8 }]}>
         Vencimento: {new Date(item.data_vencimento).toLocaleDateString()}
       </Text>
 
-      <Text style={[styles.daysRemaining, { color: statusColor }]}>
+      <Text style={[styles.daysRemaining, { color: statusColor ,'paddingLeft':8}]}>
         {daysRemaining > 0
           ? `${daysRemaining} ${
               daysRemaining === 1 ? "dia" : "dias"
@@ -163,22 +214,27 @@ export default function Order() {
           : "Fatura vencida"}
       </Text>
 
-      <TouchableOpacity onPress={() => toggleExpand(item.id)}>
-        <FontAwesome
-          name={expandedInvoiceId === item.id ? "chevron-up" : "chevron-down"}
-          size={20}
-          color="#3fffa3"
-          style={styles.expandIcon}
-        />
-      </TouchableOpacity>
+      <View style={{'display':"flex",'flexDirection':"row", "alignContent":"center", 'alignItems':"center",'justifyContent':"space-between"}}>
+            <TouchableOpacity onPress={() => toggleExpand(item.id)} style={{'marginBottom':4}}>
+            <FontAwesome
+              name={expandedInvoiceId === item.id ? "chevron-up" : "chevron-down"}
+              size={20}
+              color="#3fffa3"
+              style={styles.expandIcon}
+            />
+          </TouchableOpacity>
 
-      {/* Botão para fechar a fatura */}
-      <TouchableOpacity
-        onPress={() => confirmCloseInvoice(item.id)}
-        //style={styles.closeInvoiceButton}
-      >
-        <FontAwesome name="check-circle" size={20} color="#ff6666" />
-      </TouchableOpacity>
+          {/* Botão para fechar a fatura */}
+          {user.role === 'ADMIN' && (
+            <TouchableOpacity onPress={() => confirmCloseInvoice(item.id)} style={{}}>
+              <FontAwesome name="check-circle" size={20} color="#ff6666" />
+            </TouchableOpacity>
+        )}
+        
+      </View>
+
+      
+
 
       {expandedInvoiceId === item.id && (
         <View>
@@ -192,10 +248,12 @@ export default function Order() {
                     color="#3fffa3"
                     //style={styles.serviceIcon}
                   />{" "}
-                   {pedido.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : pedido.tipo}
+                   {pedido.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : pedido.tipo} Nº { pedido.numero}
                 </Text>
               )}
-              <Text style={styles.orderDescription}>{pedido.descricao}</Text>
+
+              <Text style={styles.orderDescription}>{pedido.descricao} {pedido.status}</Text>
+            <View style={{'display':"flex",'flexDirection':"row", "alignContent":"center", 'alignItems':"center",'justifyContent':"space-between"}}>
               <TouchableOpacity onPress={() => toggleExpandd(pedido.id)}>
                 <FontAwesome
                   name={expandedOrderId === pedido.id ? "eye-slash" : "eye"}
@@ -203,7 +261,21 @@ export default function Order() {
                   color="#3fffa3"
                   style={styles.expandIcon}
                 />
-              </TouchableOpacity>
+                </TouchableOpacity>
+                {user.role === 'ADMIN' && pedido.status === 'PENDENTE' && (
+                <TouchableOpacity onPress={() => confirmArquiveService(pedido.id)}>
+                    <FontAwesome
+                      name= "archive"
+                      size={28}
+                      color="red"
+                      style={styles.expandIcon}
+                    />
+                </TouchableOpacity>
+        )}
+                
+
+            </View>
+              
               {expandedOrderId === pedido.id && (
                 <View>
                   {pedido.Interacao.map((interacao) => (

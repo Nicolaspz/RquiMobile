@@ -52,22 +52,22 @@ function Main() {
       
       try {
         if (!Device.isDevice) {
-          //console.warn('⚠️ Notificações só funcionam em dispositivos físicos!');
+          //console.warn('Notificações só funcionam em dispositivos físicos!');
           //Alert.alert("Erro", "Notificações só funcionam em dispositivos físicos!");
           return;
         }
 
-        //console.log("🔄 Verificando permissão de notificações...");
+        //console.log(" Verificando permissão de notificações...");
         //Alert.alert("DEBUG", "Verificando permissão de notificações...");
 
         let { status } = await Notifications.getPermissionsAsync();
         if (status !== 'granted') {
-          //console.log("❌ Permissão ainda não concedida, solicitando...");
+          //console.log(" Permissão ainda não concedida, solicitando...");
         //Alert.alert("Permissão ainda não concedida", status);
 
           // Verifica se está no Android antes de pedir permissões
           if (Platform.OS === 'android') {
-            //console.log("📌 Executando no Android - Pedindo permissão manualmente...");
+            //console.log("Executando no Android - Pedindo permissão manualmente...");
             //Alert.alert("Permissão ainda não concedida", status);
 
           }
@@ -76,7 +76,7 @@ function Main() {
           status = newStatus;
         }
 
-        //console.log("✅ Estado final da permissão:", status);
+        //console.log("Estado final da permissão:", status);
         //Alert.alert("Estado final da permissão:", status);
         if (status !== 'granted') {
           Alert.alert(
@@ -90,22 +90,22 @@ function Main() {
           return;
         }
 
-        //console.log("🎉 Permissão concedida! Obtendo Expo Push Token...");
-        //Alert.alert("🎉 Permissão concedida! Obtendo Expo Push Token...");
+        //console.log(" Permissão concedida! Obtendo Expo Push Token...");
+        //Alert.alert(" Permissão concedida! Obtendo Expo Push Token...");
         const { data: token } = await Notifications.getExpoPushTokenAsync({
           projectId:"c107cdb7-ece9-44f1-a93d-2adc5c20631e", // Substitua pelo seu Project ID do Expo
         }); 
         //const token = await messaging().getToken();
 
-        //console.log("📲 Expo Push Token:", token);
+       ///console.log(" Expo Push Token:", token);
         
         // Captura o token no Alert para debug
-        //Alert.alert("Token FCM Capturado", token);
+       // Alert.alert(" Expo Push Token:", token);
 
         setExpoPushToken(token);
 
         if (user?.id) {
-          console.log(`📡 Enviando token para o backend... (User ID: ${user.id})`);
+          console.log(` Enviando token para o backend... (User ID: ${user.id})`);
           await saveTokenToBackend(token, user.id);
         }
 
@@ -126,7 +126,7 @@ function Main() {
     
 
       } catch (error:any) {
-        //console.error("❌ Erro ao registrar notificações:", error);
+        console.error(" Erro ao registrar notificações:", error);
         //Alert.alert("Erro", error.message || "Erro desconhecido");
       }
     }
@@ -159,10 +159,10 @@ function Main() {
       await api.post('/save-token', { expoToken: token, userId }, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      //console.log("✅ Token enviado para o backend com sucesso!");
+      //console.log(" Token enviado para o backend com sucesso!");
       //Alert.alert("Token enviado para o backend com sucesso");
     } catch (error:any) {
-      console.error("❌ Erro ao enviar o token:", error);
+      console.error(" Erro ao enviar o token:", error);
        //Alert.alert(" Erro ao enviar o token:", error.message || "Erro desconhecido");
     }
   }

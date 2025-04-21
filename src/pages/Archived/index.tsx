@@ -13,7 +13,6 @@ type Pedido = {
   id: string;
   descricao: string;
   status: string;
-  numero: BigInteger;
   Interacao: Interacao[];
   tipo: string;
   usuarioId: string;
@@ -34,7 +33,7 @@ type Interacao = {
   tipo: string;
 };
 
-export default function Dashboard() {
+export default function Archived() {
   const [orders, setOrders] = useState<Pedido[]>([]);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -54,7 +53,7 @@ useEffect(() => {
         const response = await api.get(url, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        const filteredOrders = response.data.filter((order: Pedido) => order.status === "PENDENTE");
+        const filteredOrders = response.data.filter((order: Pedido) => order.status === "ARQUIVADA");
         setOrders(filteredOrders);
       } catch (error) {
         console.error("Erro ao buscar pedidos:", error);
@@ -127,7 +126,7 @@ useEffect(() => {
   const renderOrderItem = ({ item }: { item: Pedido }) => (
   <View style={styles.orderContainer}>
     {/* Exibe o tipo de serviço em destaque com o mesmo estilo da descrição */}
-      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} />   {item.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : item.tipo} Nº { item.numero}</Text>}
+      {item.tipo && <Text style={styles.serviceType}><FontAwesome name="motorcycle" size={20} color="#3fffa3" style={styles.serviceIcon} />   {item.tipo === "SERVICO_30_DIAS" ? "SERVIÇO 30 +" : item.tipo}</Text>}
       <Text style={styles.orderDescription}>Cliente: {item.usuario.proces_number}  {item.usuario.tipo_pagamento}</Text>
       <View style={styles.orderDate}>
      <Text style={styles.data} >
@@ -192,7 +191,7 @@ useEffect(() => {
             style={styles.closeOrderButton}
             onPress={() => confirmAndCloseOrder(item.id)}
           >
-            <Text style={styles.closeOrderButtonText}>Terminar Serviço</Text>
+            <Text style={styles.closeOrderButtonText}>Recuperar Serviço</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -203,14 +202,14 @@ useEffect(() => {
   async function confirmAndCloseOrder(orderId: string) {
   Alert.alert(
     "Confirmar Ação",
-    "Tem certeza de que deseja fechar este pedido?",
+    "Tem certeza de que deseja recuperar este pedido?",
     [
       {
         text: "Cancelar",
         style: "cancel", // Estiliza como botão de cancelamento
       },
       {
-        text: "Fechar Pedido",
+        text: "RECUPERAR ",
         onPress: () => closeOrder(orderId), // Chama a função closeOrder ao confirmar
       },
     ],
@@ -220,12 +219,8 @@ useEffect(() => {
 
 async function closeOrder(orderId: string) {
   try {
-     console.log("Fechando pedido:", orderId);
-    const response = await api.put('/pedido', 
-      {
-        id: orderId,
-        status: 'CONCLUIDO',
-      },
+     //console.log("Fechando pedido:", orderId);
+    const response = await api.put(`/pedido_rec/${orderId}`, 
       {
         headers: { Authorization: `Bearer ${user.token}` }, // Inclui o token do usuário
       }
@@ -237,9 +232,7 @@ async function closeOrder(orderId: string) {
         text1: 'Sucesso',  // Título
         text2: 'Pedido fechado com sucesso!',  // Mensagem
       });
-      //alert('Pedido fechado com sucesso!');
-      // Aqui você pode atualizar a lista de pedidos localmente, se necessário
-      // Exemplo: setOrders(orders.map(order => order.id === orderId ? { ...order, status: 'CONCLUIDO' } : order));
+      
     } else {
       Toast.show({
         type: 'error',  // Pode ser 'success', 'error', 'info'
@@ -249,8 +242,8 @@ async function closeOrder(orderId: string) {
       //alert('Erro ao fechar pedido. Tente novamente.');
     }
   } catch (error) {
-   // console.error("Erro ao fechar o pedido:", error);
-    alert('Ocorreu um erro inesperado. Tente novamente.');
+    //console.error("Erro ao fechar o pedido:", error);
+    alert('Ocorreu um erro inesperado. Tente novamente.' + error);
   }
 }
 
@@ -319,7 +312,7 @@ async function closeOrder(orderId: string) {
         <View style={styles.noOrdersContainer}>
           {user.role === 'ADMIN' ? (
             <Text style={styles.noOrdersText}>
-              Não há Pedidos Pendentes, Verifique se todos Pedidos foram concluidos com sucesso!
+              Não há Pedidos Arquivados!! 
            
             </Text>
           ) : (
@@ -575,14 +568,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   closeOrderButton: {
-  backgroundColor: '#ff5c5c',
+  backgroundColor: '#3fffa3',
   padding: 10,
   borderRadius: 5,
   alignItems: 'center',
   marginTop: 10,
 },
 closeOrderButtonText: {
-  color: '#fff',
+  color: '#3c3c3c',
   fontWeight: 'bold',
   },
 loadingContainer: {
