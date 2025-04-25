@@ -1,6 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { AuthContext } from "../../contexts/AuthContext";
+import * as Linking from 'expo-linking'
 
 interface WelcomeProps {
   onStart: () => void;
@@ -25,14 +26,28 @@ export default function Welcome({ onStart }: WelcomeProps) {
       <TouchableOpacity style={styles.button} onPress={onStart}>
         <Text style={styles.buttonText}>Começar !!</Text>
       </TouchableOpacity>
+      
+      <TouchableOpacity
+          onPress={() => Linking.openURL('https://rdb-transport-web.vercel.app/politica')}
+        >
+        <Text style={{ color: '#00BFFF', padding: 10, marginTop: 20, textDecorationLine: 'underline' }}>
+          Política de Privacidade
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity onPress={handleLogout} > 
-              <Text style={{'color':'red', 'padding':'10','marginTop':10}}>Sair</Text>
-        </TouchableOpacity>
+              <Text style={styles.sair}>Sair</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  sair: {
+    'color': 'red',
+    'padding': 10,
+    'marginTop': 10
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
